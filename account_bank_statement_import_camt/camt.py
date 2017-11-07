@@ -141,6 +141,9 @@ class CamtParser(object):
             transaction['amount'] = amount
         self.add_value_from_node(
             ns, node, './ns:AddtlNtryInf', transaction, 'name')
+        if not transaction.message:
+            self.add_value_from_node(
+                ns, node, './ns:AddtlNtryInf', transaction, 'message')
         self.add_value_from_node(
             ns, node, [
                 './ns:NtryDtls/ns:RmtInf/ns:Strd/ns:CdtrRefInf/ns:Ref',
