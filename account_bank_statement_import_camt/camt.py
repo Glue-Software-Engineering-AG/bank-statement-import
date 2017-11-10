@@ -64,10 +64,10 @@ class CamtParser(object):
                 break
 
     def parse_transaction_details(self, ns, node, transaction):
-        # eref
         self.add_value_from_node(
             ns, node, [
                 './ns:RmtInf/ns:Strd/ns:CdtrRefInf/ns:Ref',
+                './ns:Refs/ns:EndToEndId',
             ],
             transaction, 'message'
         )
