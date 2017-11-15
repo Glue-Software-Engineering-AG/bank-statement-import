@@ -89,10 +89,11 @@ class AccountBankStatementImport(models.TransientModel):
             with ZipFile(StringIO(data_file), 'r') as archive:
                 files = [
                     archive.read(filename) for filename in archive.namelist()
-                    if not filename.endswith('/')
+                    if not ( filename.endswith('/') or filename.endswith('.pdf') )
                     ]
         except BadZipfile:
             pass
+
         # Parse the file(s)
         for import_file in files:
             # The appropriate implementation module(s) returns the statements.
