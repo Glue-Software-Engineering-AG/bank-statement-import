@@ -298,7 +298,7 @@ class AccountBankStatementImport(models.TransientModel):
     @api.model
     @api.returns('res.partner.bank')
     def _create_bank_account(
-            self, account_number, company_id=False, currency_id=False):
+            self, account_number, company_id=False, currency_id=False, partner_id=False):
         """Automagically create bank account, when not yet existing."""
         try:
             bank_type = self.env.ref('base.bank_normal')
@@ -309,6 +309,10 @@ class AccountBankStatementImport(models.TransientModel):
             'acc_number': account_number,
             'state': bank_code,
         }
+        #set partner_id if we aleady knowit
+        if partner_id:
+            vals_acc['partner_id'] = partner_id
+
         # Odoo users bank accounts (which we import statement from) have
         # company_id and journal_id set while 'counterpart' bank accounts
         # (from which statement transactions originate) don't.
@@ -342,22 +346,32 @@ class AccountBankStatementImport(models.TransientModel):
                 # account. The partner selected during the reconciliation
                 # process will be linked to the bank when the statement is
                 # closed.
-                partner_id = False
+                # If however, we already know the partner from the referenced invoice,
+                # we keep this partner and use this partner also to search for and
+                # create the bank account.
+                # Note: There are cases, where different partners have the same
+                # bank account (e.g. payment srevice center)
+
+                partner_id = line_vals['partner_id'] if 'partner_id' in line_vals else False
                 bank_account_id = False
                 partner_account_number = line_vals.get('account_number')
                 if partner_account_number:
                     bank_model = self.env['res.partner.bank']
-                    banks = bank_model.search(
-                        [('acc_number', '=', partner_account_number)], limit=1)
+                    if partner_id:
+                        banks = bank_model.search([('acc_number', '=', partner_account_number), ('partner_id', '=', partner_id)], limit=1)
+                    else:
+                        banks = bank_model.search([('acc_number', '=', partner_account_number)], limit=1)
                     if banks:
                         bank_account_id = banks[0].id
-                        partner_id = banks[0].partner_id.id
+                        if not partner_id:
+                            partner_id = banks[0].partner_id.id
                     else:
-                        bank_obj = self._create_bank_account(
-                            partner_account_number)
+                        bank_obj = self._create_bank_account(partner_account_number, partner_id=partner_id)
                         bank_account_id = bank_obj and bank_obj.id or False
-                line_vals['partner_id'] = partner_id
+                if 'partner_id' not in line_vals:
+                    line_vals['partner_id'] = partner_id
                 line_vals['bank_account_id'] = bank_account_id
+
         if 'date' in stmt_vals and 'period_id' not in stmt_vals:
             # if the parser found a date but didn't set a period for this date,
             # do this now
