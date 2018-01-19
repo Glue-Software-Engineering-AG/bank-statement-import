@@ -21,12 +21,14 @@
 ##############################################################################
 
 import re
+import logging
 from datetime import datetime
 from lxml import etree
 from openerp.addons.account_bank_statement_import.parserlib import (
     BankStatement)
 from copy import copy
 
+_logger = logging.getLogger(__name__)
 
 class CamtParser(object):
     """Parser for camt bank statement import files."""
@@ -89,10 +91,8 @@ class CamtParser(object):
         party_node = node.xpath(
             './ns:RltdPties/ns:%s' % party_type, namespaces={'ns': ns})
         if party_node:
-            self.add_value_from_node(
-                ns, party_node[0], './ns:Nm', transaction, 'remote_owner')
-            self.add_value_from_node(
-                ns, party_node[0], './ns:PstlAdr/ns:Ctry', transaction,
+            self.add_value_from_node(ns, party_node[0], './ns:Nm', transaction, 'remote_owner')
+            self.add_value_from_node(ns, party_node[0], './ns:PstlAdr/ns:Ctry', transaction,
                 'remote_owner_country'
             )
             address_node = party_node[0].xpath(
@@ -123,30 +123,23 @@ class CamtParser(object):
 
     def parse_entry(self, ns, node, transaction):
         """Parse an Ntry node and yield transactions."""
-        self.add_value_from_node(
-            ns, node, './ns:BkTxCd/ns:Prtry/ns:Cd', transaction,
-            'transfer_type'
-        )
-        self.add_value_from_node(
-            ns, node, './ns:BookgDt/ns:Dt', transaction, 'date')
-        self.add_value_from_node(
-            ns, node, './ns:BookgDt/ns:Dt', transaction, 'execution_date')
-        self.add_value_from_node(
-            ns, node, './ns:ValDt/ns:Dt', transaction, 'value_date')
+        self.add_value_from_node(ns, node, './ns:BkTxCd/ns:Prtry/ns:Cd', transaction, 'transfer_type')
+        # OERPGLUE - 1067 Bankauszug: Buchungsdatum und nicht Valuta-Datum verwenden
+        # Hint: setter von value_date setzt transaction['date'], also BookgDt lesen und in 'value_date' ablegen,
+        # um transaction['date'] zu erhalten...
+        self.add_value_from_node(ns, node, './ns:BookgDt/ns:Dt', transaction, 'value_date')
+        self.add_value_from_node(ns, node, './ns:BookgDt/ns:Dt', transaction, 'execution_date')
         amount = self.parse_amount(ns, node)
         if amount != 0.0:
             transaction['amount'] = amount
-        self.add_value_from_node(
-            ns, node, './ns:AddtlNtryInf', transaction, 'name')
-        self.add_value_from_node(
-            ns, node, [
+        self.add_value_from_node(ns, node, './ns:AddtlNtryInf', transaction, 'name')
+        self.add_value_from_node(ns, node, [
                 './ns:NtryDtls/ns:RmtInf/ns:Strd/ns:CdtrRefInf/ns:Ref',
                 './ns:NtryDtls/ns:Btch/ns:PmtInfId',
             ],
             transaction, 'ref'
         )
-        details_nodes = node.xpath(
-            './ns:NtryDtls/ns:TxDtls', namespaces={'ns': ns})
+        details_nodes = node.xpath('./ns:NtryDtls/ns:TxDtls', namespaces={'ns': ns})
         if len(details_nodes) == 0:
             yield transaction
             return
