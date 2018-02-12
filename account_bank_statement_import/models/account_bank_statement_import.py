@@ -309,11 +309,11 @@ class AccountBankStatementImport(models.TransientModel):
             'acc_number': account_number,
             'state': bank_code,
         }
-        #set partner_id if we aleady knowit
+        #set partner_id if we aleady know it
         if partner_id:
             vals_acc['partner_id'] = partner_id
 
-        # Odoo users bank accounts (which we import statement from) have
+        # Odoo uses bank accounts (which we import statement from) have
         # company_id and journal_id set while 'counterpart' bank accounts
         # (from which statement transactions originate) don't.
         # Warning : if company_id is set, the method post_write of class
@@ -350,7 +350,7 @@ class AccountBankStatementImport(models.TransientModel):
                 # we keep this partner and use this partner also to search for and
                 # create the bank account.
                 # Note: There are cases, where different partners have the same
-                # bank account (e.g. payment srevice center)
+                # bank account (e.g. payment service center)
 
                 partner_id = line_vals['partner_id'] if 'partner_id' in line_vals else False
                 bank_account_id = False

@@ -86,6 +86,8 @@ class CamtParser(object):
         party_type = 'Dbtr'
         party_type_node = node.xpath(
             '../../ns:CdtDbtInd', namespaces={'ns': ns})
+        if party_type_node:
+            transaction['party_type'] = party_type_node[0].text
         if party_type_node and party_type_node[0].text != 'CRDT':
             party_type = 'Cdtr'
         party_node = node.xpath(
