@@ -73,6 +73,7 @@ class CamtParser(object):
             ],
             transaction, 'message'
         )
+        self.add_value_from_node(ns, node, './ns:Refs/ns:PmtInfId', transaction, 'payment_info')
         self.add_value_from_node(
             ns, node.getparent().getparent(), [
                 './ns:AddtlNtryInf',
@@ -84,10 +85,9 @@ class CamtParser(object):
             transaction['amount'] = amount
         # remote party values
         party_type = 'Dbtr'
-        party_type_node = node.xpath(
-            '../../ns:CdtDbtInd', namespaces={'ns': ns})
+        party_type_node = node.xpath('../../ns:CdtDbtInd', namespaces={'ns': ns})
         if party_type_node:
-            transaction['party_type'] = party_type_node[0].text
+            setattr(transaction, 'party_type', party_type_node[0].text)
         if party_type_node and party_type_node[0].text != 'CRDT':
             party_type = 'Cdtr'
         party_node = node.xpath(
@@ -152,8 +152,7 @@ class CamtParser(object):
             # transactions['data'] should be a synthetic xml snippet which
             # contains only the TxDtls that's relevant.
             data = copy(node)
-            for j, dnode in enumerate(data.xpath(
-                    './ns:NtryDtls/ns:TxDtls', namespaces={'ns': ns})):
+            for j, dnode in enumerate(data.xpath('./ns:NtryDtls/ns:TxDtls', namespaces={'ns': ns})):
                 if j != i:
                     dnode.getparent().remove(dnode)
             transaction['data'] = etree.tostring(data)
