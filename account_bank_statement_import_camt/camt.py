@@ -68,6 +68,12 @@ class CamtParser(object):
     def parse_transaction_details(self, ns, node, transaction):
         self.add_value_from_node(
             ns, node, [
+                './ns:Refs/ns:EndToEndId',
+            ],
+            transaction, 'EndToEndId'
+        )
+        self.add_value_from_node(
+            ns, node, [
                 './ns:RmtInf/ns:Strd/ns:CdtrRefInf/ns:Ref',
                 './ns:Refs/ns:EndToEndId',
             ],
